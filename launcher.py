@@ -28,9 +28,12 @@ PID_FILE = STATE / "coding-tools-mcp.pid"
 TUNNEL_PID_FILE = STATE / "cloudflared.pid"
 TUNNEL_URL_FILE = STATE / "cloudflared-url.txt"
 TUNNEL_LOG_FILE = STATE / "cloudflared-log.txt"
+NAMED_TUNNEL_URL_FILE = STATE / "named-tunnel-url.txt"
+NAMED_TUNNEL_TOKEN_FILE = STATE / "named-tunnel-token.txt"
 OAUTH_PASSWORD_FILE = STATE / "oauth-password.txt"
 OAUTH_CLIENT_ID_FILE = STATE / "oauth-client-id.txt"
 OAUTH_CLIENT_SECRET_FILE = STATE / "oauth-client-secret.txt"
+SESSION_FILE = RUNTIME / "sessions.json"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8010
 DEFAULT_WORKSPACE = ROOT
@@ -474,6 +477,32 @@ def wait_for_tunnel_url(timeout_seconds: float = 30.0) -> str | None:
     return None
 
 
+def latest_named_tunnel_url() -> str | None:
+    if NAMED_TUNNEL_URL_FILE.exists():
+        value = NAMED_TUNNEL_URL_FILE.read_text(encoding="utf-8").strip().rstrip("/")
+        if value:
+            return value
+    return None
+
+
+def latest_named_tunnel_token() -> str | None:
+    if NAMED_TUNNEL_TOKEN_FILE.exists():
+        value = NAMED_TUNNEL_TOKEN_FILE.read_text(encoding="utf-8").strip()
+        if value:
+            return value
+    return None
+
+
+def save_named_tunnel_settings(public_url: str, token: str) -> None:
+    ensure_dirs()
+    public_url = public_url.strip().rstrip("/")
+    token = token.strip()
+    if public_url:
+        NAMED_TUNNEL_URL_FILE.write_text(public_url, encoding="utf-8")
+    if token:
+        NAMED_TUNNEL_TOKEN_FILE.write_text(token, encoding="utf-8")
+
+
 def get_or_create_oauth_password(reset: bool = False) -> str:
     ensure_dirs()
     if not reset and OAUTH_PASSWORD_FILE.exists():
@@ -618,6 +647,35 @@ def start_cloudflared_tunnel(port: int) -> subprocess.Popen:
     TUNNEL_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
 
     wait_for_tunnel_url(timeout_seconds=30)
+    return proc
+
+
+def start_cloudflared_named_tunnel(token: str, port: int) -> subprocess.Popen:
+    ensure_dirs()
+    command = cloudflared_command()
+    if not command:
+        raise RuntimeError("cloudflared was not found in PATH.")
+    token = token.strip()
+    if not token:
+        raise RuntimeError("Named tunnel token is required.")
+
+    TUNNEL_URL_FILE.unlink(missing_ok=True)
+    log_file = LOGS / f"cloudflared-named-{port}.log"
+    TUNNEL_LOG_FILE.write_text(str(log_file), encoding="utf-8")
+    args = [command, "tunnel", "run", "--token", token]
+    with log_file.open("w", encoding="utf-8") as log_handle:
+        if os.name == "nt":
+            proc = subprocess.Popen(
+                args,
+                cwd=ROOT,
+                stdout=log_handle,
+                stderr=subprocess.STDOUT,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                env=build_env(),
+            )
+        else:
+            proc = subprocess.Popen(args, cwd=ROOT, stdout=log_handle, stderr=subprocess.STDOUT, env=build_env())
+    TUNNEL_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
     return proc
 
 

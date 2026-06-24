@@ -26,7 +26,9 @@ class LauncherApp(tk.Tk):
         self.proxy_host_var = tk.StringVar(value="127.0.0.1")
         self.proxy_port_var = tk.StringVar(value="20100")
         self.proxy_url_var = tk.StringVar(value=launcher.current_proxy_summary() if launcher.current_proxy_summary() != "none" else "")
-        self.tunnel_url_var = tk.StringVar(value=launcher.latest_tunnel_url() or "")
+        self.tunnel_mode_var = tk.StringVar(value="quick")
+        self.tunnel_url_var = tk.StringVar(value=launcher.latest_named_tunnel_url() or launcher.latest_tunnel_url() or "")
+        self.named_tunnel_token_var = tk.StringVar(value=launcher.latest_named_tunnel_token() or "")
         self.chatgpt_permission_mode_var = tk.StringVar(value="trusted")
         self.oauth_password_var = tk.StringVar(value=launcher.latest_oauth_password() or "")
         self.oauth_client_id_var = tk.StringVar(value=launcher.latest_oauth_client_id() or launcher.get_or_create_oauth_client_id())
@@ -194,39 +196,51 @@ class LauncherApp(tk.Tk):
         ttk.Button(web_frame, text="Test OAuth", command=lambda: self.run_background(self.test_oauth_metadata)).grid(
             row=0, column=6, sticky=tk.W, padx=(8, 0), pady=4
         )
-        ttk.Label(web_frame, text="OAuth password").grid(row=1, column=0, sticky=tk.W, padx=(0, 8), pady=4)
-        ttk.Entry(web_frame, textvariable=self.oauth_password_var, show="*").grid(row=1, column=1, sticky=tk.EW, pady=4)
+        ttk.Label(web_frame, text="Tunnel mode").grid(row=1, column=0, sticky=tk.W, padx=(0, 8), pady=4)
+        ttk.Combobox(
+            web_frame,
+            textvariable=self.tunnel_mode_var,
+            values=("quick", "named"),
+            state="readonly",
+            width=16,
+        ).grid(row=1, column=1, sticky=tk.W, pady=4)
+        ttk.Label(web_frame, text="Named token").grid(row=1, column=2, sticky=tk.W, padx=(8, 0), pady=4)
+        ttk.Entry(web_frame, textvariable=self.named_tunnel_token_var, show="*").grid(
+            row=1, column=3, columnspan=4, sticky=tk.EW, padx=(8, 0), pady=4
+        )
+        ttk.Label(web_frame, text="OAuth password").grid(row=2, column=0, sticky=tk.W, padx=(0, 8), pady=4)
+        ttk.Entry(web_frame, textvariable=self.oauth_password_var, show="*").grid(row=2, column=1, sticky=tk.EW, pady=4)
         ttk.Button(web_frame, text="Copy Password", command=self.copy_oauth_password).grid(
-            row=1, column=2, sticky=tk.W, padx=(8, 0), pady=4
-        )
-        ttk.Button(web_frame, text="Reset Password", command=self.reset_oauth_password).grid(
-            row=1, column=3, sticky=tk.W, padx=(8, 0), pady=4
-        )
-        ttk.Label(web_frame, text="Client ID").grid(row=2, column=0, sticky=tk.W, padx=(0, 8), pady=4)
-        ttk.Entry(web_frame, textvariable=self.oauth_client_id_var).grid(row=2, column=1, sticky=tk.EW, pady=4)
-        ttk.Button(web_frame, text="Copy Client ID", command=self.copy_oauth_client_id).grid(
             row=2, column=2, sticky=tk.W, padx=(8, 0), pady=4
         )
-        ttk.Label(web_frame, text="Client Secret").grid(row=3, column=0, sticky=tk.W, padx=(0, 8), pady=4)
-        ttk.Entry(web_frame, textvariable=self.oauth_client_secret_var, show="*").grid(row=3, column=1, sticky=tk.EW, pady=4)
-        ttk.Button(web_frame, text="Copy Secret", command=self.copy_oauth_client_secret).grid(
+        ttk.Button(web_frame, text="Reset Password", command=self.reset_oauth_password).grid(
+            row=2, column=3, sticky=tk.W, padx=(8, 0), pady=4
+        )
+        ttk.Label(web_frame, text="Client ID").grid(row=3, column=0, sticky=tk.W, padx=(0, 8), pady=4)
+        ttk.Entry(web_frame, textvariable=self.oauth_client_id_var).grid(row=3, column=1, sticky=tk.EW, pady=4)
+        ttk.Button(web_frame, text="Copy Client ID", command=self.copy_oauth_client_id).grid(
             row=3, column=2, sticky=tk.W, padx=(8, 0), pady=4
         )
-        ttk.Button(web_frame, text="Reset Client", command=self.reset_oauth_client).grid(
-            row=3, column=3, sticky=tk.W, padx=(8, 0), pady=4
+        ttk.Label(web_frame, text="Client Secret").grid(row=4, column=0, sticky=tk.W, padx=(0, 8), pady=4)
+        ttk.Entry(web_frame, textvariable=self.oauth_client_secret_var, show="*").grid(row=4, column=1, sticky=tk.EW, pady=4)
+        ttk.Button(web_frame, text="Copy Secret", command=self.copy_oauth_client_secret).grid(
+            row=4, column=2, sticky=tk.W, padx=(8, 0), pady=4
         )
-        ttk.Label(web_frame, text="Web permission").grid(row=4, column=0, sticky=tk.W, padx=(0, 8), pady=4)
+        ttk.Button(web_frame, text="Reset Client", command=self.reset_oauth_client).grid(
+            row=4, column=3, sticky=tk.W, padx=(8, 0), pady=4
+        )
+        ttk.Label(web_frame, text="Web permission").grid(row=5, column=0, sticky=tk.W, padx=(0, 8), pady=4)
         ttk.Combobox(
             web_frame,
             textvariable=self.chatgpt_permission_mode_var,
             values=("trusted", "dangerous"),
             state="readonly",
             width=16,
-        ).grid(row=4, column=1, sticky=tk.W, pady=4)
+        ).grid(row=5, column=1, sticky=tk.W, pady=4)
         ttk.Label(
             web_frame,
             text="Use dangerous only for trusted projects when ChatGPT must write files.",
-        ).grid(row=4, column=2, columnspan=5, sticky=tk.W, padx=(8, 0), pady=4)
+        ).grid(row=5, column=2, columnspan=5, sticky=tk.W, padx=(8, 0), pady=4)
 
         status = ttk.LabelFrame(outer, text="Status", padding=12)
         status.pack_forget()
@@ -289,7 +303,7 @@ class LauncherApp(tk.Tk):
                 "Codex config: " + (existing_configs[0] if existing_configs else "not found automatically"),
             ]
         )
-        self.tunnel_url_var.set(launcher.latest_tunnel_url() or "")
+        self.tunnel_url_var.set(launcher.latest_named_tunnel_url() or launcher.latest_tunnel_url() or "")
         self.oauth_password_var.set(launcher.latest_oauth_password() or self.oauth_password_var.get())
         self.oauth_client_id_var.set(launcher.latest_oauth_client_id() or self.oauth_client_id_var.get())
         self.oauth_client_secret_var.set(launcher.latest_oauth_client_secret() or self.oauth_client_secret_var.get())
@@ -628,6 +642,42 @@ class LauncherApp(tk.Tk):
         if port != requested_port:
             self.after(0, lambda: self.port_var.set(str(port)))
             self.append_log(f"Port {requested_port} is not bindable; using {port}.")
+        tunnel_mode = self.tunnel_mode_var.get()
+        if tunnel_mode == "named":
+            url = self.tunnel_url_var.get().strip().rstrip("/")
+            token = self.named_tunnel_token_var.get().strip()
+            if not url:
+                raise RuntimeError("Named tunnel mode requires a fixed public Tunnel URL.")
+            if not token:
+                raise RuntimeError("Named tunnel mode requires a Cloudflare Tunnel token.")
+            launcher.save_named_tunnel_settings(url, token)
+            proc = launcher.start_chatgpt_web_server(
+                workspace_path=workspace,
+                port=port,
+                server_url=url,
+                tool_profile="full",
+                permission_mode=web_permission_mode,
+                allow_network=True,
+                strict_port=True,
+            )
+            self.append_log(f"Started OAuth MCP server with named public URL: PID {proc.pid}")
+            if not launcher.wait_for_port(launcher.DEFAULT_HOST, port):
+                raise RuntimeError("OAuth MCP server did not pass local port health check.")
+            proc = launcher.start_cloudflared_named_tunnel(token, port)
+            self.append_log(f"Started named cloudflared tunnel: PID {proc.pid}")
+            self.append_log("Waiting for named public OAuth metadata...")
+            ready, detail = launcher.wait_for_public_oauth_metadata(url)
+            if not ready:
+                self.append_log(f"Public OAuth metadata not ready: {detail}")
+                raise RuntimeError("Named tunnel started, but the fixed URL is not routing to this MCP server yet. Check Cloudflare public hostname service URL and token.")
+            self.append_log("Public OAuth metadata OK.")
+            self.after(0, lambda: self.tunnel_url_var.set(url))
+            password = launcher.latest_oauth_password() or self.oauth_password_var.get()
+            self.after(0, lambda: self.oauth_password_var.set(password))
+            self.append_log(f"ChatGPT MCP URL: {url}/mcp")
+            self.append_log("OAuth password is shown in the ChatGPT Web Mode panel.")
+            self.append_log("If ChatGPT still cannot see apply_patch, refresh the app details page or reconnect the MCP app.")
+            return
         proc = launcher.start_chatgpt_web_server(
             workspace_path=workspace,
             port=port,

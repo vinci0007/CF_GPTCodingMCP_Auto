@@ -119,6 +119,24 @@ The GUI includes a `ChatGPT Web Mode` panel for the workflow where ChatGPT conne
 11. Return to the app details page and refresh until tools are listed.
 12. Stop the tunnel when finished.
 
+### Named Tunnel mode
+
+Quick tunnels generate a new `trycloudflare.com` URL whenever the tunnel is restarted. Use Named Tunnel mode if you want ChatGPT to keep one stable MCP app URL.
+
+Recommended setup:
+
+1. In Cloudflare Zero Trust, create a Cloudflare Tunnel.
+2. Choose the `cloudflared` connector and copy the tunnel token.
+3. Add a public hostname for the tunnel, for example `mcp.example.com`.
+4. Set the public hostname service to `http://127.0.0.1:<port>`, using the same port shown in the launcher.
+5. In the launcher, set `Tunnel mode` to `named`.
+6. Paste the fixed public URL, for example `https://mcp.example.com`, into `Tunnel URL`.
+7. Paste the Cloudflare tunnel token into `Named token`.
+8. Click `Start OAuth MCP + Tunnel`.
+9. Configure ChatGPT with `https://mcp.example.com/mcp`.
+
+The token is stored in `.runtime/state/named-tunnel-token.txt`, which is ignored by Git. Treat it as a secret.
+
 ### Safety defaults
 
 - This mode exposes the local MCP server through a public tunnel.
