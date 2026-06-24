@@ -617,6 +617,8 @@ class LauncherApp(tk.Tk):
 
         if not launcher.venv_mcp().exists():
             raise RuntimeError("Install coding-tools-mcp first.")
+        web_permission_mode = self.chatgpt_permission_mode_var.get()
+        self.append_log(f"ChatGPT Web tools: profile=full, permission={web_permission_mode}, apply_patch=enabled")
         launcher.OAUTH_CLIENT_ID_FILE.write_text(self.oauth_client_id_var.get().strip(), encoding="utf-8")
         launcher.OAUTH_CLIENT_SECRET_FILE.write_text(self.oauth_client_secret_var.get().strip(), encoding="utf-8")
         launcher.OAUTH_PASSWORD_FILE.write_text(self.oauth_password_var.get().strip(), encoding="utf-8")
@@ -630,7 +632,7 @@ class LauncherApp(tk.Tk):
             workspace_path=workspace,
             port=port,
             tool_profile="full",
-            permission_mode=self.chatgpt_permission_mode_var.get(),
+            permission_mode=web_permission_mode,
             allow_network=True,
             strict_port=True,
         )
@@ -662,7 +664,7 @@ class LauncherApp(tk.Tk):
             port=port,
             server_url=url,
             tool_profile="full",
-            permission_mode=self.chatgpt_permission_mode_var.get(),
+            permission_mode=web_permission_mode,
             allow_network=True,
             strict_port=True,
         )
@@ -684,6 +686,7 @@ class LauncherApp(tk.Tk):
         self.after(0, lambda: self.oauth_password_var.set(password))
         self.append_log(f"ChatGPT MCP URL: {url}/mcp")
         self.append_log("OAuth password is shown in the ChatGPT Web Mode panel.")
+        self.append_log("If ChatGPT still cannot see apply_patch, refresh the app details page or reconnect the MCP app.")
 
     def copy_chatgpt_mcp_url(self) -> None:
         url = self.tunnel_url_var.get().strip()

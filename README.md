@@ -136,6 +136,17 @@ If ChatGPT Web must directly write project files through MCP tools, switch `Web 
 
 Use `dangerous` only for trusted projects. It disables MCP permission gates, although direct file tools are still limited to the configured workspace.
 
+The ChatGPT Web launcher always starts `coding-tools-mcp` with `tool-profile=full`, so the MCP server exposes `apply_patch`. If ChatGPT says the current MCP toolset has no write or patch tool, it is usually seeing an old cached tool list or a connection that was created while the server was not running in ChatGPT Web Mode.
+
+To refresh the writable tool list:
+
+1. In the launcher, stop the tunnel and server.
+2. Set `Web permission` to `dangerous` if you want ChatGPT to write files directly.
+3. Start `Start OAuth MCP + Tunnel`.
+4. Confirm the log says `profile=full`, `apply_patch=enabled`.
+5. In ChatGPT, open the MCP app details page and click refresh until tools are listed again.
+6. If it still shows read-only tools, disconnect and reconnect the MCP app with the current tunnel URL.
+
 ### OAuth reconnect checklist
 
 If ChatGPT repeatedly asks you to reconnect or re-enter the OAuth password:
