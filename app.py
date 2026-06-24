@@ -196,6 +196,9 @@ class LauncherApp(tk.Tk):
         ttk.Button(web_frame, text="Test OAuth", command=lambda: self.run_background(self.test_oauth_metadata)).grid(
             row=0, column=6, sticky=tk.W, padx=(8, 0), pady=4
         )
+        ttk.Button(web_frame, text="Copy Instructions", command=self.copy_chatgpt_instructions).grid(
+            row=0, column=7, sticky=tk.W, padx=(8, 0), pady=4
+        )
         ttk.Label(web_frame, text="Tunnel mode").grid(row=1, column=0, sticky=tk.W, padx=(0, 8), pady=4)
         ttk.Combobox(
             web_frame,
@@ -749,6 +752,11 @@ class LauncherApp(tk.Tk):
         self.clipboard_clear()
         self.clipboard_append(mcp_url)
         self.append_log(f"Copied: {mcp_url}")
+
+    def copy_chatgpt_instructions(self) -> None:
+        self.clipboard_clear()
+        self.clipboard_append(launcher.CHATGPT_INSTRUCTIONS)
+        self.append_log("Copied ChatGPT MCP instructions.")
 
     def stop_tunnel(self) -> None:
         launcher.stop_tunnel_process()

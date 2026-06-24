@@ -191,6 +191,8 @@ To refresh the writable tool list:
 5. In ChatGPT, open the MCP app details page and click refresh until tools are listed again.
 6. If it still shows read-only tools, disconnect and reconnect the MCP app with the current tunnel URL.
 
+The GUI also includes `Copy Instructions`. Paste the copied text into your ChatGPT project instructions or custom instructions if you want ChatGPT to default to using MCP tools for code changes instead of only returning manual diffs.
+
 ### OAuth reconnect checklist
 
 If ChatGPT repeatedly asks you to reconnect or re-enter the OAuth password:
