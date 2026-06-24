@@ -128,6 +128,25 @@ The GUI includes a `ChatGPT Web Mode` panel for the workflow where ChatGPT conne
 - Auto-installing `cloudflared` downloads the binary into `.runtime/bin`; it does not install a global Cloudflare app.
 - Do not commit `.runtime/`; it may contain local OAuth values, logs, and process state.
 
+### ChatGPT Web permission mode
+
+The GUI starts ChatGPT Web Mode with `trusted` permission by default. This allows normal local development commands while keeping some safety gates enabled.
+
+If ChatGPT Web must directly write project files through MCP tools, switch `Web permission` to `dangerous` before starting `Start OAuth MCP + Tunnel`. This maps to `coding-tools-mcp --permission-mode dangerous`.
+
+Use `dangerous` only for trusted projects. It disables MCP permission gates, although direct file tools are still limited to the configured workspace.
+
+### OAuth reconnect checklist
+
+If ChatGPT repeatedly asks you to reconnect or re-enter the OAuth password:
+
+- Keep the launcher, MCP server, and Cloudflare tunnel running during the whole ChatGPT session.
+- Do not click `Reset Password` or `Reset Client` unless you also update the ChatGPT MCP app configuration.
+- Re-copy `Client Secret` into ChatGPT if the log shows `invalid_client`.
+- Re-copy the MCP URL after every quick tunnel restart; quick tunnel URLs are temporary.
+- Click `Test OAuth` and confirm the metadata issuer matches the current tunnel URL.
+- If you stop and restart the MCP server, ChatGPT may need to reconnect because OAuth tokens are server-runtime state.
+
 ## Codex integration assessment
 
 The best integration path is direct local MCP:

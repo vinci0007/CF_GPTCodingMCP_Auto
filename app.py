@@ -27,6 +27,7 @@ class LauncherApp(tk.Tk):
         self.proxy_port_var = tk.StringVar(value="20100")
         self.proxy_url_var = tk.StringVar(value=launcher.current_proxy_summary() if launcher.current_proxy_summary() != "none" else "")
         self.tunnel_url_var = tk.StringVar(value=launcher.latest_tunnel_url() or "")
+        self.chatgpt_permission_mode_var = tk.StringVar(value="trusted")
         self.oauth_password_var = tk.StringVar(value=launcher.latest_oauth_password() or "")
         self.oauth_client_id_var = tk.StringVar(value=launcher.latest_oauth_client_id() or launcher.get_or_create_oauth_client_id())
         self.oauth_client_secret_var = tk.StringVar(value=launcher.latest_oauth_client_secret() or launcher.get_or_create_oauth_client_secret())
@@ -214,6 +215,18 @@ class LauncherApp(tk.Tk):
         ttk.Button(web_frame, text="Reset Client", command=self.reset_oauth_client).grid(
             row=3, column=3, sticky=tk.W, padx=(8, 0), pady=4
         )
+        ttk.Label(web_frame, text="Web permission").grid(row=4, column=0, sticky=tk.W, padx=(0, 8), pady=4)
+        ttk.Combobox(
+            web_frame,
+            textvariable=self.chatgpt_permission_mode_var,
+            values=("trusted", "dangerous"),
+            state="readonly",
+            width=16,
+        ).grid(row=4, column=1, sticky=tk.W, pady=4)
+        ttk.Label(
+            web_frame,
+            text="Use dangerous only for trusted projects when ChatGPT must write files.",
+        ).grid(row=4, column=2, columnspan=5, sticky=tk.W, padx=(8, 0), pady=4)
 
         status = ttk.LabelFrame(outer, text="Status", padding=12)
         status.pack_forget()
@@ -617,7 +630,7 @@ class LauncherApp(tk.Tk):
             workspace_path=workspace,
             port=port,
             tool_profile="full",
-            permission_mode="trusted",
+            permission_mode=self.chatgpt_permission_mode_var.get(),
             allow_network=True,
             strict_port=True,
         )
@@ -649,7 +662,7 @@ class LauncherApp(tk.Tk):
             port=port,
             server_url=url,
             tool_profile="full",
-            permission_mode="trusted",
+            permission_mode=self.chatgpt_permission_mode_var.get(),
             allow_network=True,
             strict_port=True,
         )
