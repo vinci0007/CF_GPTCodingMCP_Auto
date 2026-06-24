@@ -13,6 +13,7 @@ if not exist ".runtime" mkdir ".runtime"
 if not exist ".runtime\logs" mkdir ".runtime\logs"
 if not exist ".runtime\state" mkdir ".runtime\state"
 if not exist ".runtime\bin" mkdir ".runtime\bin"
+if not exist ".runtime\cloudflared" mkdir ".runtime\cloudflared"
 
 if not exist ".venv\Scripts\python.exe" (
     echo [2/5] Creating project virtual environment...

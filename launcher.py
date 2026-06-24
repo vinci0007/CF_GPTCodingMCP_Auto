@@ -21,6 +21,7 @@ RUNTIME = ROOT / ".runtime"
 LOGS = RUNTIME / "logs"
 STATE = RUNTIME / "state"
 BIN = RUNTIME / "bin"
+CLOUDFLARED_RUNTIME = RUNTIME / "cloudflared"
 SNIPPET_FILE = RUNTIME / "codex-mcp-snippet.toml"
 PROXY_FILE = RUNTIME / "proxy.env"
 PROJECTS_FILE = RUNTIME / "projects.json"
@@ -74,6 +75,7 @@ def ensure_dirs() -> None:
     LOGS.mkdir(parents=True, exist_ok=True)
     STATE.mkdir(parents=True, exist_ok=True)
     BIN.mkdir(parents=True, exist_ok=True)
+    CLOUDFLARED_RUNTIME.mkdir(parents=True, exist_ok=True)
 
 
 def project_name_from_path(path: Path) -> str:
@@ -493,6 +495,10 @@ def latest_named_tunnel_token() -> str | None:
     return None
 
 
+def named_tunnel_config_path() -> Path:
+    return CLOUDFLARED_RUNTIME / "config.yml"
+
+
 def save_named_tunnel_settings(public_url: str, token: str) -> None:
     ensure_dirs()
     public_url = public_url.strip().rstrip("/")
@@ -656,13 +662,17 @@ def start_cloudflared_named_tunnel(token: str, port: int) -> subprocess.Popen:
     if not command:
         raise RuntimeError("cloudflared was not found in PATH.")
     token = token.strip()
-    if not token:
-        raise RuntimeError("Named tunnel token is required.")
 
     TUNNEL_URL_FILE.unlink(missing_ok=True)
     log_file = LOGS / f"cloudflared-named-{port}.log"
     TUNNEL_LOG_FILE.write_text(str(log_file), encoding="utf-8")
-    args = [command, "tunnel", "run", "--token", token]
+    config_file = named_tunnel_config_path()
+    if token:
+        args = [command, "tunnel", "run", "--token", token]
+    elif config_file.exists():
+        args = [command, "tunnel", "--config", str(config_file), "run"]
+    else:
+        raise RuntimeError(f"Named tunnel requires a token or runtime config file: {config_file}")
     with log_file.open("w", encoding="utf-8") as log_handle:
         if os.name == "nt":
             proc = subprocess.Popen(

@@ -137,6 +137,32 @@ Recommended setup:
 
 The token is stored in `.runtime/state/named-tunnel-token.txt`, which is ignored by Git. Treat it as a secret.
 
+If you do not want to use the Zero Trust dashboard token flow, you can manage the tunnel locally with `cloudflared` CLI and keep the run config inside `.runtime/cloudflared`.
+
+Local runtime config flow:
+
+1. Run `cloudflared tunnel login` once to authorize your Cloudflare account.
+2. Create credentials inside this project:
+   ```powershell
+   .runtime\bin\cloudflared.exe tunnel create CF_GPTCodingMCP_Auto --credentials-file .runtime\cloudflared\CF_GPTCodingMCP_Auto.json
+   ```
+3. Route your fixed hostname:
+   ```powershell
+   .runtime\bin\cloudflared.exe tunnel route dns CF_GPTCodingMCP_Auto mcp.example.com
+   ```
+4. Create `.runtime/cloudflared/config.yml`:
+   ```yaml
+   tunnel: CF_GPTCodingMCP_Auto
+   credentials-file: .runtime/cloudflared/CF_GPTCodingMCP_Auto.json
+   ingress:
+     - hostname: mcp.example.com
+       service: http://127.0.0.1:48010
+     - service: http_status:404
+   ```
+5. In the launcher, set `Tunnel mode` to `named`, leave `Named token` empty, and set `Tunnel URL` to `https://mcp.example.com`.
+
+This still uses a Cloudflare account and a Cloudflare-managed DNS hostname, but the connector runtime config and credentials stay in the project `.runtime` directory.
+
 ### Safety defaults
 
 - This mode exposes the local MCP server through a public tunnel.

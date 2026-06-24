@@ -648,8 +648,8 @@ class LauncherApp(tk.Tk):
             token = self.named_tunnel_token_var.get().strip()
             if not url:
                 raise RuntimeError("Named tunnel mode requires a fixed public Tunnel URL.")
-            if not token:
-                raise RuntimeError("Named tunnel mode requires a Cloudflare Tunnel token.")
+            if not token and not launcher.named_tunnel_config_path().exists():
+                raise RuntimeError(f"Named tunnel mode requires a token or runtime config file: {launcher.named_tunnel_config_path()}")
             launcher.save_named_tunnel_settings(url, token)
             proc = launcher.start_chatgpt_web_server(
                 workspace_path=workspace,
