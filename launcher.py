@@ -481,7 +481,7 @@ def wait_for_tunnel_url(timeout_seconds: float = 30.0) -> str | None:
 
 def latest_named_tunnel_url() -> str | None:
     if NAMED_TUNNEL_URL_FILE.exists():
-        value = NAMED_TUNNEL_URL_FILE.read_text(encoding="utf-8").strip().rstrip("/")
+        value = NAMED_TUNNEL_URL_FILE.read_text(encoding="utf-8-sig").strip().lstrip("\ufeff").rstrip("/")
         if value:
             return value
     return None
@@ -501,7 +501,7 @@ def named_tunnel_config_path() -> Path:
 
 def save_named_tunnel_settings(public_url: str, token: str) -> None:
     ensure_dirs()
-    public_url = public_url.strip().rstrip("/")
+    public_url = public_url.strip().lstrip("\ufeff").rstrip("/")
     token = token.strip()
     if public_url:
         NAMED_TUNNEL_URL_FILE.write_text(public_url, encoding="utf-8")
