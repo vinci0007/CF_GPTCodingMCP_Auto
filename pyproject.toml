@@ -1,0 +1,6 @@
+[project]
+name = "coding-tools-launcher"
+version = "0.1.0"
+description = "Local launcher for coding-tools-mcp"
+requires-python = ">=3.10"
+
