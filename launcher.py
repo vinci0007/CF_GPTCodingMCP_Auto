@@ -40,7 +40,14 @@ DEFAULT_PORT = 8010
 DEFAULT_WORKSPACE = ROOT
 DEFAULT_TOOL_PROFILE = "read-only"
 DEFAULT_PERMISSION_MODE = "safe"
-CHATGPT_INSTRUCTIONS = """默认使用 Coding Tools MCP 读取、搜索和修改当前项目文件。需要修改代码时，不要只输出 diff；优先调用 MCP 的 apply_patch。对长函数或重复结构，先读取目标文件相关片段，使用更长且唯一的上下文锚点。如果 apply_patch 因上下文不匹配失败，重新读取文件后用更精确上下文重试；只有工具不可用时才给用户手动 diff。"""
+CHATGPT_INSTRUCTIONS = (
+    "请优先使用 Coding Tools MCP 辅助读取、搜索和编辑当前项目。"
+    "修改文件前先读取相关片段并简要说明计划；修改时优先使用最小范围、可验证的 apply_patch。"
+    "对长函数或重复结构，使用唯一且足够长的上下文锚点。"
+    "若 patch 上下文不匹配，请重新读取文件并缩小修改范围后重试。"
+    "只处理用户明确要求的普通项目文件；不要访问运行态目录、虚拟环境目录或凭据类文件；不要执行破坏性命令。"
+    "只有工具不可用时才给用户手动 diff。"
+)
 
 
 @dataclass
