@@ -42,7 +42,8 @@ DEFAULT_TOOL_PROFILE = "read-only"
 DEFAULT_PERMISSION_MODE = "safe"
 CHATGPT_INSTRUCTIONS = (
     "请优先使用 Coding Tools MCP 辅助读取、搜索和编辑当前项目。"
-    "修改文件前先读取相关片段并简要说明计划；修改时优先使用最小范围、可验证的 apply_patch。"
+    "修改文件前先读取相关片段并简要说明计划；修改时优先使用最小范围、可验证的工具调用。"
+    "简单且唯一的文本替换优先使用 replace_text_once；需要整体重写文件时使用 write_text_file；复杂多行修改再使用 apply_patch。"
     "apply_patch 必须使用 MCP envelope 格式：以 *** Begin Patch 开始，以 *** End Patch 结束，"
     "中间使用 *** Update File: path、*** Add File: path 或 *** Delete File: path。"
     "不要使用 unified diff 格式，不要包含 ---、+++，也不要使用 @@ -line,count +line,count 这类行号 header。"
@@ -227,6 +228,70 @@ def venv_python() -> Path:
 
 def venv_mcp() -> Path:
     return VENV / "Scripts" / "coding-tools-mcp.exe" if os.name == "nt" else VENV / "bin" / "coding-tools-mcp"
+
+
+def mcp_server_file() -> Path:
+    return VENV / "Lib" / "site-packages" / "coding_tools_mcp" / "server.py" if os.name == "nt" else VENV / "lib" / "python3.13" / "site-packages" / "coding_tools_mcp" / "server.py"
+
+
+def patch_mcp_write_tools() -> bool:
+    server_file = mcp_server_file()
+    if not server_file.exists():
+        return False
+    text = server_file.read_text(encoding="utf-8")
+    if '"replace_text_once": ToolSpec(' in text and '"write_text_file": ToolSpec(' in text:
+        return False
+
+    text = text.replace(
+        '    "apply_patch": ToolSpec(\n        title="Apply patch",\n        description="Apply a patch envelope transactionally inside the workspace.",\n        destructive=True,\n    ),',
+        '    "apply_patch": ToolSpec(\n        title="Apply patch",\n        description="Apply a patch envelope transactionally inside the workspace.",\n        destructive=True,\n    ),\n    "replace_text_once": ToolSpec(\n        title="Replace text once",\n        description="Replace exactly one UTF-8 text occurrence inside a workspace file.",\n        destructive=True,\n    ),\n    "write_text_file": ToolSpec(\n        title="Write text file",\n        description="Write a complete UTF-8 text file inside the workspace.",\n        destructive=True,\n    ),',
+    )
+    text = text.replace(
+        '    def apply_patch(self, args: dict[str, Any]) -> dict[str, Any]:\n',
+        '    def replace_text_once(self, args: dict[str, Any]) -> dict[str, Any]:\n'
+        '        path_text = str(args.get("path", ""))\n'
+        '        old = str(args.get("old", ""))\n'
+        '        new = str(args.get("new", ""))\n'
+        '        dry_run = bool(args.get("dry_run", False))\n'
+        '        if not path_text or old == "":\n'
+        '            raise ToolFailure("INVALID_ARGUMENT", "path and non-empty old text are required.", category="validation")\n'
+        '        target = self.resolve_for_write(path_text)\n'
+        '        self.workspace.reject_write_symlink(path_text)\n'
+        '        content = read_text_preserve_newlines(target.path)\n'
+        '        count = content.count(old)\n'
+        '        if count != 1:\n'
+        '            raise ToolFailure("REPLACE_FAILED", f"Expected exactly one match, found {count}.", category="validation")\n'
+        '        updated = content.replace(old, new, 1)\n'
+        '        if not dry_run:\n'
+        '            target.path.parent.mkdir(parents=True, exist_ok=True)\n'
+        '            target.path.write_text(updated, encoding="utf-8", newline="")\n'
+        '        return {"dry_run": dry_run, "path": target.display, "replacements": 1, "warnings": []}\n'
+        '\n'
+        '    def write_text_file(self, args: dict[str, Any]) -> dict[str, Any]:\n'
+        '        path_text = str(args.get("path", ""))\n'
+        '        content = str(args.get("content", ""))\n'
+        '        dry_run = bool(args.get("dry_run", False))\n'
+        '        if not path_text:\n'
+        '            raise ToolFailure("INVALID_ARGUMENT", "path is required.", category="validation")\n'
+        '        target = self.resolve_for_write(path_text)\n'
+        '        self.workspace.reject_write_symlink(path_text)\n'
+        '        if not dry_run:\n'
+        '            target.path.parent.mkdir(parents=True, exist_ok=True)\n'
+        '            target.path.write_text(content, encoding="utf-8", newline="")\n'
+        '        return {"dry_run": dry_run, "path": target.display, "bytes": len(content.encode("utf-8")), "warnings": []}\n'
+        '\n'
+        '    def apply_patch(self, args: dict[str, Any]) -> dict[str, Any]:\n',
+    )
+    text = text.replace(
+        '        "apply_patch": object_schema({"patch": {**string, "minLength": 1}, "dry_run": {**boolean, "default": False}}, ["patch"]),',
+        '        "apply_patch": object_schema({"patch": {**string, "minLength": 1}, "dry_run": {**boolean, "default": False}}, ["patch"]),\n'
+        '        "replace_text_once": object_schema({"path": {**string, "minLength": 1}, "old": {**string, "minLength": 1}, "new": string, "dry_run": {**boolean, "default": False}}, ["path", "old", "new"]),\n'
+        '        "write_text_file": object_schema({"path": {**string, "minLength": 1}, "content": string, "dry_run": {**boolean, "default": False}}, ["path", "content"]),',
+    )
+    if '"replace_text_once": ToolSpec(' not in text or 'def replace_text_once(' not in text:
+        raise RuntimeError("Failed to patch coding-tools-mcp write tools.")
+    server_file.write_text(text, encoding="utf-8")
+    return True
 
 
 def cloudflared_command() -> str | None:
@@ -594,6 +659,7 @@ def start_chatgpt_web_server(
     ensure_dirs()
     if not venv_mcp().exists():
         raise RuntimeError("coding-tools-mcp is not installed in .venv.")
+    patch_mcp_write_tools()
 
     if strict_port and not can_bind_port(DEFAULT_HOST, port):
         raise RuntimeError(f"Port {port} is still in use; stop the old MCP server and retry.")
@@ -769,6 +835,7 @@ def install_package(pause_after: bool = True) -> None:
     print("Installing coding-tools-mcp into .venv...")
     subprocess.run([str(venv_python()), "-m", "pip", "install", "--upgrade", "pip"], cwd=ROOT, check=True, env=build_env())
     subprocess.run([str(venv_python()), "-m", "pip", "install", "--upgrade", "coding-tools-mcp"], cwd=ROOT, check=True, env=build_env())
+    print("Patched MCP write tools." if patch_mcp_write_tools() else "MCP write tools already patched.")
     subprocess.run([str(venv_mcp()), "--help"], cwd=ROOT, check=True, env=build_env())
     if pause_after:
         pause()
@@ -820,6 +887,8 @@ def start_server(pause_after: bool = True) -> None:
         if pause_after:
             pause()
         return
+    if patch_mcp_write_tools():
+        print("Patched MCP write tools.")
 
     workspace = prompt(str(DEFAULT_WORKSPACE), "Workspace")
     port_text = prompt(str(DEFAULT_PORT), "Port")

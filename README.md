@@ -193,6 +193,13 @@ To refresh the writable tool list:
 
 The GUI also includes `Copy Instructions`. Paste the copied text into your ChatGPT project instructions or custom instructions if you want ChatGPT to default to using MCP tools for code changes instead of only returning manual diffs.
 
+The launcher patches the project-local `coding-tools-mcp` install with two extra write tools before starting the server:
+
+- `replace_text_once`: safest for small edits when the old text occurs exactly once.
+- `write_text_file`: useful for complete file rewrites or generated small files.
+
+Use these tools before `apply_patch` when possible. They avoid the fragile context matching that can fail inside long functions or repeated code blocks.
+
 `apply_patch` expects the MCP patch envelope format, not standard unified diff. Do not send patches containing `---`, `+++`, or `@@ -line,count +line,count` headers. Use this shape instead:
 
 ```text

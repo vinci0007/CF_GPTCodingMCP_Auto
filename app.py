@@ -535,7 +535,9 @@ class LauncherApp(tk.Tk):
             check=True,
             env=launcher.build_env(),
         )
+        patched = launcher.patch_mcp_write_tools()
         self.append_log("Installed coding-tools-mcp.")
+        self.append_log("Patched MCP write tools." if patched else "MCP write tools already patched.")
 
     def start_server(self) -> None:
         self.save_current_project_settings()
@@ -545,6 +547,9 @@ class LauncherApp(tk.Tk):
             return
         if not launcher.venv_mcp().exists():
             raise RuntimeError("Install coding-tools-mcp first.")
+        patched = launcher.patch_mcp_write_tools()
+        if patched:
+            self.append_log("Patched MCP write tools.")
 
         workspace = Path(self.workspace_var.get()).resolve()
         requested_port = int(self.port_var.get())
@@ -634,8 +639,11 @@ class LauncherApp(tk.Tk):
 
         if not launcher.venv_mcp().exists():
             raise RuntimeError("Install coding-tools-mcp first.")
+        patched = launcher.patch_mcp_write_tools()
+        if patched:
+            self.append_log("Patched MCP write tools.")
         web_permission_mode = self.chatgpt_permission_mode_var.get()
-        self.append_log(f"ChatGPT Web tools: profile=full, permission={web_permission_mode}, apply_patch=enabled")
+        self.append_log(f"ChatGPT Web tools: profile=full, permission={web_permission_mode}, apply_patch=enabled, replace_text_once=enabled")
         launcher.OAUTH_CLIENT_ID_FILE.write_text(self.oauth_client_id_var.get().strip(), encoding="utf-8")
         launcher.OAUTH_CLIENT_SECRET_FILE.write_text(self.oauth_client_secret_var.get().strip(), encoding="utf-8")
         launcher.OAUTH_PASSWORD_FILE.write_text(self.oauth_password_var.get().strip(), encoding="utf-8")
