@@ -193,6 +193,26 @@ To refresh the writable tool list:
 
 The GUI also includes `Copy Instructions`. Paste the copied text into your ChatGPT project instructions or custom instructions if you want ChatGPT to default to using MCP tools for code changes instead of only returning manual diffs.
 
+`apply_patch` expects the MCP patch envelope format, not standard unified diff. Do not send patches containing `---`, `+++`, or `@@ -line,count +line,count` headers. Use this shape instead:
+
+```text
+*** Begin Patch
+*** Update File: path/to/file.py
+@@
+ context line
+-old line
++new line
+*** End Patch
+```
+
+If a patch fails:
+
+- Re-read the target file slice before retrying.
+- Patch one small region at a time.
+- Add more unique context around repeated code.
+- Avoid generated/runtime/credential files.
+- Do not fall back to manual diff unless MCP tools are unavailable.
+
 ### OAuth reconnect checklist
 
 If ChatGPT repeatedly asks you to reconnect or re-enter the OAuth password:
